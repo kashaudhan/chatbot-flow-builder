@@ -144,6 +144,21 @@ const App = () => {
     );
   }
 
+  const restoreOnMount = useCallback(() => {
+    const restoreFlow = async () => {
+      const flow = JSON.parse(localStorage.getItem(FLOW_KEY) as string);
+
+      if (flow) {
+        const { x = 0, y = 0, zoom = 1 } = flow.viewport;
+        setNodes(flow.nodes || []);
+        setEdges(flow.edges || []);
+        setViewport({ x, y, zoom });
+      }
+    };
+
+    restoreFlow();
+  }, [setNodes, setViewport]);
+
 
   React.useEffect(() => {
     if (selectedElements.length > 0) {
@@ -163,6 +178,11 @@ const App = () => {
       setNodeName("");
     }
   }, [nodeName, selectedElements, setNodes]);
+
+  React.useEffect(() => {
+    restoreOnMount();
+  }, [])
+  
 
   return (
     <>
