@@ -13,20 +13,26 @@ import ReactFlow, {
   Controls,
   Background,
   BackgroundVariant,
+  NodeMouseHandler,
+  useReactFlow,
+  OnConnect,
+  addEdge,
 } from "reactflow";
 import "reactflow/dist/base.css";
-import { flowStyle, initialNodes } from "@/constants";
+import { FLOW_KEY, flowStyle, initialNodes } from "@/constants";
 import MessageNode from "@/components/message-node";
 import ControlPanel from "@/components/control-panel";
+import { id } from "@/utils";
 
 const App = () => {
-  // States and hooks setup
   const reactFlowWrapper = useRef<any>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [selectedElements, setSelectedElements] = useState<any>([]);
   const [nodeName, setNodeName] = useState("");
+
+  const { setViewport } = useReactFlow();
 
   // Define custom node types
   const nodeTypes = useMemo(
@@ -37,16 +43,131 @@ const App = () => {
   );
 
   // Handle node click
-  const onNodeClick = useCallback((event: any, node: any) => {}, []);
+  const onNodeClick: NodeMouseHandler  = useCallback((event, node) => {
+    setSelectedElements([node]);
+    setNodeName(node.data.label);
+    setNodes((nodes) =>
+      nodes.map((n) => ({
+        ...n,
+        selected: n.id === node.id,
+      }))
+    );
+  }, []);
 
   // Handle edge connection
-  const onConnect = useCallback((params: any) => {}, []);
+  const onConnect: OnConnect = useCallback(
+    (params: any) => {
+      setEdges((eds) => addEdge(params, eds));
+    },
+    [setEdges]
+  );
 
   // Enable drop effect on drag over
-  const onDragOver = useCallback((event: any) => {}, []);
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
 
   // Handle drop event to add a new node
-  const onDrop = useCallback((event: any) => {}, []);
+  const onDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const type = event.dataTransfer.getData("application/reactflow");
+
+      if (typeof type === "undefined" || !type) {
+        return;
+      }
+
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+      const newNode = {
+        id: id.generateNewId(),
+        type,
+        position,
+        data: { label: `${type}` },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [reactFlowInstance]
+  );
+
+  const isNodeUnconnected = useCallback(() => {
+    let unconnectedNodes = nodes.filter(
+      (node) =>
+        !edges.find(
+          (edge) => edge.source === node.id || edge.target === node.id
+        )
+    );
+
+    return unconnectedNodes.length > 0;
+  }, [nodes, edges]);
+
+  const onSave = useCallback(() => {
+    if (reactFlowInstance) {
+      const emptyTargetHandles = checkEmptyTargetHandles();
+
+      if (nodes.length > 1 && (emptyTargetHandles > 1 || isNodeUnconnected())) {
+        alert(
+          "Error: More than one node has an empty target handle or there are unconnected nodes."
+        );
+      } else {
+        const flow = reactFlowInstance.toObject();
+        localStorage.setItem(FLOW_KEY, JSON.stringify(flow));
+        alert("Save successful!"); // Provide feedback when save is successful
+      }
+    }
+  }, [reactFlowInstance, nodes, isNodeUnconnected]);
+
+  const checkEmptyTargetHandles = () => {
+    let emptyTargetHandles = 0;
+    edges.forEach((edge) => {
+      if (!edge.targetHandle) {
+        emptyTargetHandles++;
+      }
+    });
+    return emptyTargetHandles;
+  };
+
+  const onRestore = useCallback(() => {
+    const restoreFlow = async () => {
+      const flow = JSON.parse(localStorage.getItem(FLOW_KEY) as string);
+
+      if (flow) {
+        const { x = 0, y = 0, zoom = 1 } = flow.viewport;
+        setNodes(flow.nodes || []);
+        setEdges(flow.edges || []);
+        setViewport({ x, y, zoom });
+      }
+    };
+
+    restoreFlow();
+  }, [setNodes, setViewport]);
+
+
+  React.useEffect(() => {
+    if (selectedElements.length > 0) {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === selectedElements[0]?.id) {
+            node.data = {
+              ...node.data,
+              label: nodeName,
+            };
+          }
+          return node;
+        })
+      );
+    } else {
+      // Clear name when no node is selected
+      setNodeName("");
+    }
+  }, [nodeName, selectedElements, setNodes]);
 
   return (
     <div className="flex flex-row min-h-screen lg:flex-row">
