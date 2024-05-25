@@ -17,6 +17,7 @@ import ReactFlow, {
 import "reactflow/dist/base.css";
 import { flowStyle, initialNodes } from "@/constants";
 import MessageNode from "@/components/message-node";
+import ControlPanel from "@/components/control-panel";
 
 const App = () => {
   // States and hooks setup
@@ -25,6 +26,7 @@ const App = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [selectedElements, setSelectedElements] = useState<any>([]);
+  const [nodeName, setNodeName] = useState("");
 
   // Define custom node types
   const nodeTypes = useMemo(
@@ -68,6 +70,12 @@ const App = () => {
           <Controls />
         </ReactFlow>
       </div>
+      <ControlPanel
+        nodeName={nodeName}
+        setNodeName={setNodeName}
+        selectedNode={selectedElements[0]}
+        setSelectedElements={setSelectedElements}
+      />
     </div>
   );
 };
