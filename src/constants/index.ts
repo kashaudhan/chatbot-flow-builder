@@ -7,7 +7,7 @@ export const initialNodes = [
   {
     id: "1",
     type: "messageNode",
-    data: { label: "input nodes" },
+    data: { label: "new message node" },
     position: { x: 250, y: 5 },
   },
 ];

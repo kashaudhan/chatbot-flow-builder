@@ -16,6 +16,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/base.css";
 import { flowStyle, initialNodes } from "@/constants";
+import MessageNode from "@/components/message-node";
 
 const App = () => {
   // States and hooks setup
@@ -28,7 +29,7 @@ const App = () => {
   // Define custom node types
   const nodeTypes = useMemo(
     () => ({
-      messageNode: () => <div>Node</div>,
+      messageNode: MessageNode,
     }),
     []
   );
@@ -63,7 +64,7 @@ const App = () => {
           onPaneClick={() => {}}
           fitView
         >
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          <Background variant={BackgroundVariant.Cross} gap={12} size={0.5} />
           <Controls />
         </ReactFlow>
       </div>
