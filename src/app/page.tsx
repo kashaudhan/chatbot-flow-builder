@@ -134,20 +134,15 @@ const App = () => {
     return emptyTargetHandles;
   };
 
-  const onRestore = useCallback(() => {
-    const restoreFlow = async () => {
-      const flow = JSON.parse(localStorage.getItem(FLOW_KEY) as string);
-
-      if (flow) {
-        const { x = 0, y = 0, zoom = 1 } = flow.viewport;
-        setNodes(flow.nodes || []);
-        setEdges(flow.edges || []);
-        setViewport({ x, y, zoom });
-      }
-    };
-
-    restoreFlow();
-  }, [setNodes, setViewport]);
+  const onPanClick = () => {
+    setSelectedElements([]); // Reset selected elements when clicking on pane
+    setNodes((nodes) =>
+      nodes.map((n) => ({
+        ...n,
+        selected: false, // Reset selected state of nodes when clicking on pane
+      }))
+    );
+  }
 
 
   React.useEffect(() => {
@@ -170,8 +165,12 @@ const App = () => {
   }, [nodeName, selectedElements, setNodes]);
 
   return (
-    <div className="flex flex-row min-h-screen lg:flex-row">
-      <div className="flex-grow h-screen" ref={reactFlowWrapper}>
+    <>
+    <div className="bg-gray-200 border-b-[1px] border-blue-500 px-14 py-2 flex justify-end relative top-0 w-full">
+      <button onClick={onSave} className="px-4 py-2 bg-white text-blue-500 border-[1px] hover:bg-gray-300 rounded-lg">save changes</button>
+    </div>
+    <div className="flex flex-row lg:flex-row">
+      <div className="flex-grow h-[93vh]" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
           nodeTypes={nodeTypes}
@@ -184,7 +183,7 @@ const App = () => {
           onDragOver={onDragOver}
           style={flowStyle}
           onNodeClick={onNodeClick}
-          onPaneClick={() => {}}
+          onPaneClick={onPanClick}
           fitView
         >
           <Background variant={BackgroundVariant.Cross} gap={12} size={0.5} />
@@ -198,6 +197,7 @@ const App = () => {
         setSelectedElements={setSelectedElements}
       />
     </div>
+    </>
   );
 };
 
